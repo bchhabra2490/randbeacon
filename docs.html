@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RandBeacon API Documentation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            color: #667eea;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            color: #6b7280;
+            margin-bottom: 16px;
+        }
+
+        .nav {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .nav a {
+            color: #667eea;
+            text-decoration: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            transition: background 0.2s;
+        }
+
+        .nav a:hover {
+            background: #f3f4f6;
+        }
+
+        .content {
+            background: white;
+            border-radius: 12px;
+            padding: 32px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        h2 {
+            color: #667eea;
+            margin-top: 32px;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        h2:first-child {
+            margin-top: 0;
+        }
+
+        h3 {
+            color: #4b5563;
+            margin-top: 24px;
+            margin-bottom: 12px;
+            font-size: 18px;
+        }
+
+        .endpoint {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 16px;
+            margin: 16px 0;
+            border-radius: 4px;
+        }
+
+        .method {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+            margin-right: 12px;
+        }
+
+        .method.get {
+            background: #10b981;
+            color: white;
+        }
+
+        .method.post {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .method.ws {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .path {
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 16px;
+            color: #111827;
+        }
+
+        .description {
+            margin: 12px 0;
+            color: #4b5563;
+        }
+
+        .params {
+            margin: 16px 0;
+        }
+
+        .params table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 8px;
+        }
+
+        .params th {
+            background: #f3f4f6;
+            padding: 8px 12px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 13px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .params td {
+            padding: 8px 12px;
+            border-bottom: 1px solid #e5e7eb;
+            font-size: 13px;
+        }
+
+        .params td:first-child {
+            font-family: 'Monaco', 'Courier New', monospace;
+            color: #667eea;
+            font-weight: 500;
+        }
+
+        .example {
+            background: #1f2937;
+            color: #f9fafb;
+            padding: 16px;
+            border-radius: 6px;
+            margin: 16px 0;
+            overflow-x: auto;
+        }
+
+        .example pre {
+            margin: 0;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .example-title {
+            color: #9ca3af;
+            font-size: 12px;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .response {
+            margin: 16px 0;
+        }
+
+        .response-schema {
+            background: #f8f9fa;
+            padding: 16px;
+            border-radius: 6px;
+            margin-top: 8px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 13px;
+            overflow-x: auto;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+
+        .badge.required {
+            background: #ef4444;
+            color: white;
+        }
+
+        .badge.optional {
+            background: #6b7280;
+            color: white;
+        }
+
+        .code {
+            background: #f3f4f6;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 13px;
+            color: #667eea;
+        }
+
+        ul {
+            margin: 12px 0;
+            padding-left: 24px;
+        }
+
+        li {
+            margin: 8px 0;
+        }
+
+        .note {
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 12px 16px;
+            margin: 16px 0;
+            border-radius: 4px;
+        }
+
+        .note strong {
+            color: #92400e;
+        }
+
+        .error {
+            background: #fee2e2;
+            border-left: 4px solid #ef4444;
+            padding: 12px 16px;
+            margin: 16px 0;
+            border-radius: 4px;
+        }
+
+        .error strong {
+            color: #991b1b;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📚 RandBeacon API Documentation</h1>
+            <p>Complete guide to using the RandBeacon API and WebSocket stream endpoints</p>
+            <div class="nav">
+                <a href="/">← Back to Dashboard</a>
+                <a href="#overview">Overview</a>
+                <a href="#rest-api">REST API</a>
+                <a href="#websocket">WebSocket</a>
+            </div>
+        </div>
+
+        <div class="content">
+            <section id="overview">
+                <h2>Overview</h2>
+                <p>
+                    RandBeacon is a hybrid random beacon service that aggregates entropy from multiple cryptocurrency 
+                    exchange sources (Binance, Coinbase, Kraken) to generate verifiable random numbers. The service 
+                    provides both REST API endpoints and a WebSocket stream for real-time updates.
+                </p>
+                <p>
+                    <strong>Base URL:</strong> <code class="code">http://localhost:8080</code>
+                </p>
+            </section>
+
+            <section id="rest-api">
+                <h2>REST API Endpoints</h2>
+
+                <div class="endpoint">
+                    <div>
+                        <span class="method get">GET</span>
+                        <span class="path">/random/latest</span>
+                    </div>
+                    <div class="description">
+                        Get the latest beacon entry. Returns the most recent random beacon entry with all its metadata.
+                    </div>
+                    <div class="response">
+                        <h4>Response (200 OK)</h4>
+                        <div class="response-schema">{
+  "index": 1234,
+  "timestamp_ns": 1704067200000000000,
+  "public_entropy_hex": "a1b2c3d4e5f6...",
+  "final_random_hex": "f6e5d4c3b2a1...",
+  "snapshot_id": "abc123def456..."
+}</div>
+                    </div>
+                    <div class="error">
+                        <strong>503 Service Unavailable:</strong> Returned when no beacon entries have been generated yet.
+                    </div>
+                    <div class="example">
+                        <div class="example-title">Example Request</div>
+                        <pre>curl http://localhost:8080/random/latest</pre>
+                    </div>
+                </div>
+
+                <div class="endpoint">
+                    <div>
+                        <span class="method get">GET</span>
+                        <span class="path">/random/history</span>
+                    </div>
+                    <div class="description">
+                        Get a list of recent beacon entries. Returns entries in reverse chronological order (newest first).
+                    </div>
+                    <div class="params">
+                        <h4>Query Parameters</h4>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Parameter</th>
+                                    <th>Type</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>n</td>
+                                    <td>integer</td>
+                                    <td>Number of entries to return (default: 10, max: 4096)</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="response">
+                        <h4>Response (200 OK)</h4>
+                        <div class="response-schema">[
+  {
+    "index": 1234,
+    "timestamp_ns": 1704067200000000000,
+    "public_entropy_hex": "a1b2c3d4e5f6...",
+    "final_random_hex": "f6e5d4c3b2a1...",
+    "snapshot_id": "abc123def456..."
+  },
+  {
+    "index": 1233,
+    "timestamp_ns": 1704067190000000000,
+    ...
+  }
+]</div>
+                    </div>
+                    <div class="example">
+                        <div class="example-title">Example Request</div>
+                        <pre>curl "http://localhost:8080/random/history?n=20"</pre>
+                    </div>
+                </div>
+
+                <div class="endpoint">
+                    <div>
+                        <span class="method get">GET</span>
+                        <span class="path">/random/snapshot/:index</span>
+                    </div>
+                    <div class="description">
+                        Get the raw snapshot data for a specific beacon entry index. The snapshot contains the aggregated 
+                        entropy events that were used to generate the beacon entry. Returns binary data.
+                    </div>
+                    <div class="params">
+                        <h4>Path Parameters</h4>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Parameter</th>
+                                    <th>Type</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>index</td>
+                                    <td>integer</td>
+                                    <td>The beacon entry index</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="response">
+                        <h4>Response (200 OK)</h4>
+                        <p>Content-Type: <code class="code">application/octet-stream</code></p>
+                        <p>Returns the raw binary snapshot data.</p>
+                    </div>
+                    <div class="error">
+                        <strong>400 Bad Request:</strong> Invalid index format<br>
+                        <strong>404 Not Found:</strong> Snapshot not available (may have been purged or index doesn't exist)
+                    </div>
+                    <div class="note">
+                        <strong>Note:</strong> Snapshots are stored in a rolling buffer. Only the most recent 8192 snapshots are available.
+                    </div>
+                    <div class="example">
+                        <div class="example-title">Example Request</div>
+                        <pre>curl http://localhost:8080/random/snapshot/1234 -o snapshot.bin</pre>
+                    </div>
+                </div>
+
+                <div class="endpoint">
+                    <div>
+                        <span class="method post">POST</span>
+                        <span class="path">/random/derive</span>
+                    </div>
+                    <div class="description">
+                        Derive additional random bytes from the latest beacon entry using HKDF (HMAC-based Key Derivation Function). 
+                        This allows you to generate application-specific random values from the beacon entropy.
+                    </div>
+                    <div class="params">
+                        <h4>Request Body</h4>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Field</th>
+                                    <th>Type</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>salt</td>
+                                    <td>string</td>
+                                    <td>Salt value (can be hex string or plain text). If hex, will be decoded; otherwise used as-is.</td>
+                                </tr>
+                                <tr>
+                                    <td>len</td>
+                                    <td>integer</td>
+                                    <td>Length of derived bytes to generate (1-8192)</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="response">
+                        <h4>Response (200 OK)</h4>
+                        <div class="response-schema">{
+  "derived_hex": "a1b2c3d4e5f6...",
+  "len": 32,
+  "index": 1234,
+  "timestamp": 1704067200000000000,
+  "snapshot_id": "abc123def456..."
+}</div>
+                    </div>
+                    <div class="error">
+                        <strong>400 Bad Request:</strong> Invalid request body or length out of range<br>
+                        <strong>503 Service Unavailable:</strong> No beacon entries available yet
+                    </div>
+                    <div class="note">
+                        <strong>Note:</strong> The derivation uses HKDF-SHA256 with the latest beacon's final random value as the IKM (Input Key Material), 
+                        your provided salt, and the info string "randforge-derive-v1".
+                    </div>
+                    <div class="example">
+                        <div class="example-title">Example Request</div>
+                        <pre>curl -X POST http://localhost:8080/random/derive \
+  -H "Content-Type: application/json" \
+  -d '{
+    "salt": "my-app-salt",
+    "len": 32
+  }'</pre>
+                    </div>
+                </div>
+            </section>
+
+            <section id="websocket">
+                <h2>WebSocket Stream</h2>
+
+                <div class="endpoint">
+                    <div>
+                        <span class="method ws">WS</span>
+                        <span class="path">/stream</span>
+                    </div>
+                    <div class="description">
+                        Connect to the WebSocket stream to receive real-time updates of the latest beacon entry. 
+                        The server sends the latest entry immediately upon connection, then sends updates whenever 
+                        a new entry is generated (approximately every 1 second).
+                    </div>
+                    <div class="params">
+                        <h4>Connection</h4>
+                        <ul>
+                            <li><strong>URL:</strong> <code class="code">ws://localhost:8080/stream</code> (or <code class="code">wss://</code> for HTTPS)</li>
+                            <li><strong>Protocol:</strong> Standard WebSocket</li>
+                            <li><strong>Message Format:</strong> JSON (BeaconEntry object)</li>
+                        </ul>
+                    </div>
+                    <div class="response">
+                        <h4>Message Format</h4>
+                        <p>Each message is a JSON-encoded BeaconEntry object:</p>
+                        <div class="response-schema">{
+  "index": 1234,
+  "timestamp_ns": 1704067200000000000,
+  "public_entropy_hex": "a1b2c3d4e5f6...",
+  "final_random_hex": "f6e5d4c3b2a1...",
+  "snapshot_id": "abc123def456..."
+}</div>
+                    </div>
+                    <div class="note">
+                        <strong>Note:</strong> The same entry may be sent multiple times if no new entry has been generated 
+                        since the last update. Check the <code class="code">index</code> field to determine if it's a new entry.
+                    </div>
+                    <div class="example">
+                        <div class="example-title">JavaScript Example</div>
+                        <pre>const ws = new WebSocket('ws://localhost:8080/stream');
+
+ws.onopen = () => {
+  console.log('Connected to RandBeacon stream');
+};
+
+ws.onmessage = (event) => {
+  const entry = JSON.parse(event.data);
+  console.log('New beacon entry:', entry);
+  // Check entry.index to see if it's a new entry
+};
+
+ws.onerror = (error) => {
+  console.error('WebSocket error:', error);
+};
+
+ws.onclose = () => {
+  console.log('Connection closed');
+};</pre>
+                    </div>
+                    <div class="example">
+                        <div class="example-title">Python Example</div>
+                        <pre>import websocket
+import json
+
+def on_message(ws, message):
+    entry = json.loads(message)
+    print(f"New entry: index={entry['index']}")
+
+def on_error(ws, error):
+    print(f"Error: {error}")
+
+def on_close(ws, close_status_code, close_msg):
+    print("Connection closed")
+
+ws = websocket.WebSocketApp(
+    "ws://localhost:8080/stream",
+    on_message=on_message,
+    on_error=on_error,
+    on_close=on_close
+)
+
+ws.run_forever()</pre>
+                    </div>
+                </div>
+            </section>
+
+            <section id="data-structures">
+                <h2>Data Structures</h2>
+
+                <h3>BeaconEntry</h3>
+                <div class="response-schema">{
+  "index": uint64,              // Sequential index of the beacon entry
+  "timestamp_ns": int64,         // Unix timestamp in nanoseconds
+  "public_entropy_hex": string,   // 128 hex chars (64 bytes) - public entropy
+  "final_random_hex": string,     // 128 hex chars (64 bytes) - final random value
+  "snapshot_id": string          // Short hash identifier for the snapshot
+}</div>
+
+                <h3>DeriveRequest</h3>
+                <div class="response-schema">{
+  "salt": string,    // Salt value (hex string or plain text)
+  "len": int        // Length of derived bytes (1-8192)
+}</div>
+
+                <h3>DeriveResponse</h3>
+                <div class="response-schema">{
+  "derived_hex": string,    // Hex-encoded derived random bytes
+  "len": int,              // Length of derived bytes
+  "index": uint64,         // Beacon entry index used
+  "timestamp": int64,      // Beacon entry timestamp
+  "snapshot_id": string    // Beacon entry snapshot ID
+}</div>
+            </section>
+
+            <section id="limits">
+                <h2>Limits and Constraints</h2>
+                <ul>
+                    <li><strong>History Size:</strong> Maximum 4096 entries stored in memory</li>
+                    <li><strong>Snapshot Storage:</strong> Maximum 8192 snapshots stored (rolling buffer)</li>
+                    <li><strong>Derive Length:</strong> 1-8192 bytes per derivation request</li>
+                    <li><strong>Public Entropy:</strong> 64 bytes (128 hex characters)</li>
+                    <li><strong>Final Random:</strong> 64 bytes (128 hex characters)</li>
+                    <li><strong>Beacon Interval:</strong> New entries generated approximately every 1 second</li>
+                </ul>
+            </section>
+
+            <section id="errors">
+                <h2>Error Responses</h2>
+                <p>All error responses follow this format:</p>
+                <div class="response-schema">{
+  "error": "error message"
+}</div>
+                <h3>Common Status Codes</h3>
+                <ul>
+                    <li><strong>400 Bad Request:</strong> Invalid request parameters or body</li>
+                    <li><strong>404 Not Found:</strong> Resource not found (e.g., snapshot index doesn't exist)</li>
+                    <li><strong>500 Internal Server Error:</strong> Server-side error</li>
+                    <li><strong>503 Service Unavailable:</strong> Service not ready (e.g., no beacon entries yet)</li>
+                </ul>
+            </section>
+        </div>
+    </div>
+</body>
+</html>
+

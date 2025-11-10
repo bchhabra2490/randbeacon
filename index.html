@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RandBeacon</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #667eea;
+            margin-bottom: 8px;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            margin-top: 8px;
+        }
+
+        .status.connected {
+            background: #10b981;
+            color: white;
+        }
+
+        .status.disconnected {
+            background: #ef4444;
+            color: white;
+        }
+
+        .status.connecting {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .latest-card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .latest-card h2 {
+            color: #667eea;
+            margin-bottom: 16px;
+            font-size: 20px;
+        }
+
+        .history {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .history h2 {
+            color: #667eea;
+            margin-bottom: 16px;
+            font-size: 20px;
+        }
+
+        .history-list {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        thead {
+            background: #f8f9fa;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        th {
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #667eea;
+            border-bottom: 2px solid #e5e7eb;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #e5e7eb;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 13px;
+            word-break: break-all;
+        }
+
+        tbody tr:hover {
+            background: #f8f9fa;
+        }
+
+        tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .copy-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 4px 8px;
+            margin-left: 8px;
+            color: #667eea;
+            opacity: 0.6;
+            transition: opacity 0.2s;
+            display: inline-flex;
+            align-items: center;
+            vertical-align: middle;
+        }
+
+        .copy-btn:hover {
+            opacity: 1;
+        }
+
+        .copy-btn:active {
+            transform: scale(0.95);
+        }
+
+        .copy-icon {
+            width: 16px;
+            height: 16px;
+            fill: currentColor;
+        }
+
+        .value-cell {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .value-text {
+            flex: 1;
+            word-break: break-all;
+        }
+
+        .index-cell {
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .timestamp-cell {
+            color: #6b7280;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #10b981;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.3s, transform 0.3s;
+            z-index: 1000;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #6b7280;
+        }
+
+        .header-links {
+            margin-top: 12px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .header-links a {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 14px;
+            padding: 6px 12px;
+            border-radius: 6px;
+            transition: background 0.2s;
+        }
+
+        .header-links a:hover {
+            background: #f3f4f6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔮 RandBeacon</h1>
+            <p>Real-time random beacon entries from hybrid entropy sources</p>
+            <div class="header-links">
+                <div class="status disconnected" id="status">Disconnected</div>
+                <a href="/docs">📚 API Documentation</a>
+            </div>
+        </div>
+
+        <div class="latest-card">
+            <h2>Latest Entry</h2>
+            <div id="latest-entry">
+                <p class="empty-state">Waiting for connection...</p>
+            </div>
+        </div>
+
+        <div class="history">
+            <h2>History</h2>
+            <div class="history-list" id="history-list">
+                <p class="empty-state">No entries yet...</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast">Copied to clipboard!</div>
+
+    <script>
+        const statusEl = document.getElementById('status');
+        const latestEntryEl = document.getElementById('latest-entry');
+        const historyListEl = document.getElementById('history-list');
+        const toastEl = document.getElementById('toast');
+        
+        let ws = null;
+        let history = [];
+        let lastEntryIndex = null;
+        const maxHistory = 50;
+
+        function updateStatus(status, text) {
+            statusEl.className = `status ${status}`;
+            statusEl.textContent = text;
+        }
+
+        function formatTimestamp(ts) {
+            const date = new Date(ts / 1000000); // Convert nanoseconds to milliseconds
+            return date.toLocaleString();
+        }
+
+        function showToast(message) {
+            toastEl.textContent = message;
+            toastEl.classList.add('show');
+            setTimeout(() => {
+                toastEl.classList.remove('show');
+            }, 2000);
+        }
+
+        async function copyToClipboard(text) {
+            try {
+                await navigator.clipboard.writeText(text);
+                showToast('Copied to clipboard!');
+            } catch (err) {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                textArea.style.position = 'fixed';
+                textArea.style.opacity = '0';
+                document.body.appendChild(textArea);
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    showToast('Copied to clipboard!');
+                } catch (e) {
+                    showToast('Failed to copy');
+                }
+                document.body.removeChild(textArea);
+            }
+        }
+
+        function createCopyButton(text) {
+            const btn = document.createElement('button');
+            btn.className = 'copy-btn';
+            btn.title = 'Copy to clipboard';
+            btn.innerHTML = `
+                <svg class="copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+            `;
+            btn.onclick = (e) => {
+                e.stopPropagation();
+                copyToClipboard(text);
+            };
+            return btn;
+        }
+
+        function createValueCell(value, copyable = true) {
+            const cell = document.createElement('td');
+            const container = document.createElement('div');
+            container.className = 'value-cell';
+            
+            const textSpan = document.createElement('span');
+            textSpan.className = 'value-text';
+            textSpan.textContent = value;
+            container.appendChild(textSpan);
+            
+            if (copyable) {
+                container.appendChild(createCopyButton(value));
+            }
+            
+            cell.appendChild(container);
+            return cell;
+        }
+
+        function renderLatestTable(entry) {
+            const table = document.createElement('table');
+            const tbody = document.createElement('tbody');
+            
+            const rows = [
+                ['Index', entry.index.toString(), false],
+                ['Timestamp', formatTimestamp(entry.timestamp_ns), false],
+                ['Snapshot ID', entry.snapshot_id, true],
+                ['Public Entropy', entry.public_entropy_hex, true],
+                ['Final Random', entry.final_random_hex, true]
+            ];
+            
+            rows.forEach(([label, value, copyable]) => {
+                const row = document.createElement('tr');
+                const labelCell = document.createElement('td');
+                labelCell.style.fontWeight = '600';
+                labelCell.style.color = '#667eea';
+                labelCell.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+                labelCell.style.textTransform = 'uppercase';
+                labelCell.style.fontSize = '12px';
+                labelCell.style.width = '150px';
+                labelCell.textContent = label;
+                row.appendChild(labelCell);
+                row.appendChild(createValueCell(value, copyable));
+                tbody.appendChild(row);
+            });
+            
+            table.appendChild(tbody);
+            return table;
+        }
+
+        function renderHistoryTable(entries) {
+            if (entries.length === 0) {
+                return null;
+            }
+            
+            const table = document.createElement('table');
+            const thead = document.createElement('thead');
+            const headerRow = document.createElement('tr');
+            
+            const headers = ['Index', 'Timestamp', 'Snapshot ID', 'Public Entropy', 'Final Random'];
+            headers.forEach(header => {
+                const th = document.createElement('th');
+                th.textContent = header;
+                headerRow.appendChild(th);
+            });
+            
+            thead.appendChild(headerRow);
+            table.appendChild(thead);
+            
+            const tbody = document.createElement('tbody');
+            
+            entries.forEach(entry => {
+                const row = document.createElement('tr');
+                
+                const indexCell = document.createElement('td');
+                indexCell.className = 'index-cell';
+                indexCell.textContent = entry.index;
+                row.appendChild(indexCell);
+                
+                const timestampCell = document.createElement('td');
+                timestampCell.className = 'timestamp-cell';
+                timestampCell.textContent = formatTimestamp(entry.timestamp_ns);
+                row.appendChild(timestampCell);
+                
+                row.appendChild(createValueCell(entry.snapshot_id, true));
+                row.appendChild(createValueCell(entry.public_entropy_hex, true));
+                row.appendChild(createValueCell(entry.final_random_hex, true));
+                
+                tbody.appendChild(row);
+            });
+            
+            table.appendChild(tbody);
+            return table;
+        }
+
+        function addToHistory(entry) {
+            history.unshift(entry);
+            if (history.length > maxHistory) {
+                history = history.slice(0, maxHistory);
+            }
+            
+            const table = renderHistoryTable(history);
+            if (table) {
+                historyListEl.innerHTML = '';
+                historyListEl.appendChild(table);
+            }
+        }
+
+        function updateLatest(entry) {
+            const table = renderLatestTable(entry);
+            latestEntryEl.innerHTML = '';
+            latestEntryEl.appendChild(table);
+        }
+
+        function connect() {
+            updateStatus('connecting', 'Connecting...');
+            
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/stream`;
+            
+            ws = new WebSocket(wsUrl);
+
+            ws.onopen = () => {
+                updateStatus('connected', 'Connected');
+                console.log('WebSocket connected');
+            };
+
+            ws.onmessage = (event) => {
+                try {
+                    const entry = JSON.parse(event.data);
+                    updateLatest(entry);
+                    // Only add to history if this is a new entry (index changed)
+                    if (lastEntryIndex === null || entry.index !== lastEntryIndex) {
+                        addToHistory(entry);
+                        lastEntryIndex = entry.index;
+                    }
+                } catch (err) {
+                    console.error('Error parsing message:', err);
+                }
+            };
+
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+                updateStatus('disconnected', 'Connection Error');
+            };
+
+            ws.onclose = () => {
+                updateStatus('disconnected', 'Disconnected');
+                console.log('WebSocket closed');
+                
+                // Attempt to reconnect after 3 seconds
+                setTimeout(() => {
+                    if (!ws || ws.readyState === WebSocket.CLOSED) {
+                        connect();
+                    }
+                }, 3000);
+            };
+        }
+
+        // Start connection when page loads
+        connect();
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            if (ws) {
+                ws.close();
+            }
+        });
+    </script>
+</body>
+</html>
