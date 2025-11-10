@@ -6,6 +6,14 @@ A hybrid random beacon service that aggregates entropy from multiple cryptocurre
 
 RandBeacon is a distributed random number generation service that combines public entropy sources with a private secret to produce cryptographically secure random values. The system collects real-time trade data from multiple cryptocurrency exchanges (Binance, Coinbase, Kraken) and processes it through a hybrid entropy model to generate beacon entries approximately every second.
 
+## Demo Video
+
+Watch a quick demo of RandBeacon in action:
+
+[![RandBeacon Demo](https://img.youtube.com/vi/di4FXnXcDeE/maxresdefault.jpg)](https://www.youtube.com/watch?v=di4FXnXcDeE)
+
+[Watch on YouTube](https://www.youtube.com/watch?v=di4FXnXcDeE)
+
 ## How It Works
 
 ### Entropy Collection
