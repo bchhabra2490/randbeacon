@@ -1,0 +1,40 @@
+# Git files
+.git
+.gitignore
+
+# Documentation
+Readme.md
+
+# Local secret (should be mounted as volume or generated)
+local_secret.bin
+
+# Build artifacts
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test files
+*_test.go
+*.test
+
+# IDE files
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Docker files
+Dockerfile
+.dockerignore
+
+# Temporary files
+*.tmp
+*.log
+
