@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"crypto/hmac"
 	"crypto/sha256"
@@ -10,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"runtime"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -72,6 +74,21 @@ var (
 	bufPool = sync.Pool{New: func() any { b := make([]byte, 0, 4096); return &b }}
 	localSecret []byte
 )
+
+var (
+	bufPool2 = sync.Pool{New: func() any { return bytes.NewBuffer(make([]byte, 0, 32*1024));}}
+
+	curBufMu sync.Mutex
+	curBuf *bytes.Buffer
+
+	eventsThisRound uint64
+	bytesThisRound uint64
+)
+
+func initAggBuffers(){
+	curBuf = bufPool2.Get().(*bytes.Buffer)
+	curBuf.Reset()
+}
 
 func nowNS() int64 {return time.Now().UnixNano()}
 
@@ -311,22 +328,96 @@ func aggregator(ctx context.Context, startPrev []byte){
 	ticker := time.NewTicker(TickInterval)
 	defer ticker.Stop()
 
-	aggBuf := make([]byte, 0, 64*1024)
+	type workItem struct{
+		snapshot []byte
+		prevPub []byte
+		ts int64
+		idx uint64
+	}
+	workCh := make(chan workItem, 8)
+
+	workers := runtime.NumCPU()
+	for i:= 0; i<workers; i++{
+		go func(){
+			for wi := range workCh{
+				hpub := sha3.New512()
+				_, _ = hpub.Write(wi.snapshot)
+				_, _ = hpub.Write(wi.prevPub)
+				_, _ = hpub.Write([]byte(strconv.FormatInt(wi.ts, 10)))
+				publicSum := hpub.Sum(nil)
+
+				mac := hmac.New(sha256.New, localSecret)
+				_, _ = mac.Write(publicSum)
+				privateSum := mac.Sum(nil)
+
+				hfinal := sha3.New512()
+				_, _ = hfinal.Write(publicSum)
+				_, _ = hfinal.Write(privateSum)
+				finalSum := hfinal.Sum(nil)
+
+				entry := BeaconEntry{
+					Index: wi.idx,
+					Timestamp: wi.ts,
+					PublicEntropyHex: hex.EncodeToString(publicSum),
+					FinalRandomHex: hex.EncodeToString(finalSum),
+					SnapshotID: shortSnapshotID(wi.snapshot),
+				}
+				
+				snapshotsMu.Lock()
+				snapshots[wi.idx] = wi.snapshot
+				if len(snapshots) > MaxSnapshotStore {
+					for k := range snapshots {
+						delete(snapshots, k)
+						break
+					}
+				}
+				snapshotsMu.Unlock()
+				appendHistory(entry)
+				
+				atomic.AddUint64(&eventsThisRound, 0)
+			}
+		}()
+	}	
+
 	for {
 		select{
 		case <-ctx.Done():
 			return
 		case ev := <-entropyCh:
-			dst := compactEventBytes(ev)
-			aggBuf = append(aggBuf, dst...)
-			if len(aggBuf) > 1<<18{
-				aggBuf = aggBuf[len(aggBuf)-(1<<18):]
-			}
+			packed := compactEventBytes(ev)
+			curBufMu.Lock()
+			curBuf.Write(packed)
+			curBufMu.Unlock()
+			
+			atomic.AddUint64(&eventsThisRound, 1)
+			atomic.AddUint64(&bytesThisRound, uint64(len(packed)))
 		case <-ticker.C:
-			snap := make([]byte, len(aggBuf))
-			copy(snap, aggBuf)
-			aggBuf = aggBuf[:0]
+			newBuf := bufPool2.Get().(*bytes.Buffer)
+			newBuf.Reset()
+			
+			curBufMu.Lock()
+			old := curBuf
+			curBuf = newBuf
+
+			roundEvents := atomic.SwapUint64(&eventsThisRound, 0)
+			roundBytes := atomic.SwapUint64(&bytesThisRound, 0)
+			curBufMu.Unlock()
+
+			snap := make([]byte, old.Len())
+			copy(snap, old.Bytes())
+			old.Reset()
+			bufPool2.Put(old)
+
 			ts := nowNS()
+			index++
+
+			wi := workItem{snapshot: snap, prevPub: append([]byte(nil), prevPublic...), ts: ts, idx: index}
+
+			select{
+			case workCh <- wi:
+			default:
+				go func(w workItem){ workCh <- w }(wi)
+			}
 
 			hpub := sha3.New512()
 			_, _ = hpub.Write(snap)
@@ -334,41 +425,10 @@ func aggregator(ctx context.Context, startPrev []byte){
 			_, _ = hpub.Write([]byte(strconv.FormatInt(ts, 10)))
 			publicSum := hpub.Sum(nil)
 
-			mac := hmac.New(sha256.New, localSecret)
-			_, _ = mac.Write(publicSum)
-			privateSum := mac.Sum(nil)
-
-			hfinal := sha3.New512()
-			_, _ = hfinal.Write(publicSum)
-			_, _ = hfinal.Write(privateSum)
-			finalSum := hfinal.Sum(nil)
-
-			index++
-			entry := BeaconEntry{
-				Index:            index,
-				Timestamp:        ts,
-				PublicEntropyHex: hex.EncodeToString(publicSum),
-				FinalRandomHex:   hex.EncodeToString(finalSum),
-				SnapshotID:       shortSnapshotID(snap),
-			}
-
-
-			snapshotsMu.Lock()
-			snapshots[index] = snap
-			if len(snapshots) > MaxSnapshotStore {
-				for k := range snapshots {
-					delete(snapshots, k)
-					break
-				}
-			}
-			snapshotsMu.Unlock()
-
-			appendHistory(entry)
-
 			copy(prevPublic, publicSum)
 
-			fmt.Printf("[beacon] idx=%d ts=%d snapshot_id=%s pub=%s final=%s\n",
-				entry.Index, entry.Timestamp, entry.SnapshotID, entry.PublicEntropyHex[:16], entry.FinalRandomHex[:16])
+			fmt.Printf("[beacon] idx=%d ts=%d snapshot_id=%s pub=%s final=%s round_events=%d round_bytes=%d\n",
+				index, ts, shortSnapshotID(snap), hex.EncodeToString(publicSum[:16]), hex.EncodeToString(publicSum[:16]), roundEvents, roundBytes)
 		}
 	}
 }
@@ -547,6 +607,7 @@ func main() {
 		copy(seed, tmp[:])
 	}
 
+	initAggBuffers()
 	go aggregator(ctx, seed)
 
 	srv := &http.Server{
